@@ -1,0 +1,6 @@
+# El núcleo y el modo en memoria solo usan la biblioteca estándar de Python 3.10+.
+# Modo real (MySQL legacy + MongoDB):
+mysql-connector-python>=8.0
+pymongo>=4.6
+# Solo para pruebas del adaptador MongoDB:
+mongomock>=4.1

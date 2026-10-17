@@ -1,0 +1,410 @@
+classDiagram
+direction LR
+class ProgramadorLiberacion {
+  + iniciar() -> None
+  + detener() -> None
+}
+class DianSimulado {
+  + emitir_factura(orden: Orden) -> Factura
+}
+class HmacCredenciales {
+  + generar_codigo_redencion() -> str
+  + firmar(evento_id: str; datos: str) -> str
+  + verificar(evento_id: str; datos: str; firma: str) -> bool
+  + representacion_grafica(boleto: Boleto) -> str
+}
+class _Simulado {
+  + canal() -> str
+  + enviar(destinatario: Cliente; mensaje: Mensaje) -> None
+}
+class SendgridCorreoSimulado {
+}
+class WhatsAppSimulado {
+}
+class _PasarelaSimulada {
+  + nombre() -> str
+  + registrar_pago(orden: Orden) -> SolicitudPago
+}
+class PayPalSimulado {
+  + interpretar_confirmacion(notificacion: dict) -> ConfirmacionPago
+}
+class WompiSimulado {
+  + interpretar_confirmacion(notificacion: dict) -> ConfirmacionPago
+}
+class PseSimulado {
+  + interpretar_confirmacion(notificacion: dict) -> ConfirmacionPago
+}
+class EventoRepositorioMemoria {
+  + obtener(evento_id: str) -> Optional~Evento~
+  + listar() -> List~Evento~
+}
+class RecintoRepositorioMemoria {
+  + obtener_aforo(recinto_id: str) -> int
+  + listar_asientos(recinto_id: str) -> List~Asiento~
+}
+class OrdenRepositorioMemoria {
+  + guardar(orden: Orden) -> None
+  + obtener(orden_id: str) -> Optional~Orden~
+  + listar_por_evento(evento_id: str) -> List~Orden~
+  + listar_por_cliente_y_evento(cliente_id: str; evento_id: str) -> List~Orden~
+  + listar_pendientes_expiradas(ahora: datetime) -> List~Orden~
+}
+class BoletoRepositorioMemoria {
+  + guardar_todos(boletos: List~Boleto~) -> None
+  + listar_por_orden(orden_id: str) -> List~Boleto~
+  + obtener_por_codigo(codigo_redencion: str) -> Optional~Boleto~
+}
+class MongoOrdenRepositorio {
+  + guardar(orden: Orden) -> None
+  + obtener(orden_id: str) -> Optional~Orden~
+  + listar_por_evento(evento_id: str) -> List~Orden~
+  + listar_por_cliente_y_evento(cliente_id: str; evento_id: str) -> List~Orden~
+  + listar_pendientes_expiradas(ahora: datetime) -> List~Orden~
+}
+class MongoBoletoRepositorio {
+  + guardar_todos(boletos: List~Boleto~) -> None
+  + listar_por_orden(orden_id: str) -> List~Boleto~
+  + obtener_por_codigo(codigo_redencion: str) -> Optional~Boleto~
+}
+class MySqlEventoRepositorio {
+  + obtener(evento_id: str) -> Optional~Evento~
+  + listar() -> List~Evento~
+}
+class MySqlRecintoRepositorio {
+  + obtener_aforo(recinto_id: str) -> int
+  + listar_asientos(recinto_id: str) -> List~Asiento~
+}
+class RelojSistema {
+  + ahora() -> datetime
+}
+class GeneradorUuid {
+  + nuevo_id() -> str
+}
+class Aplicacion {
+  catalogo: ServicioCatalogo
+  compra: ServicioCompra
+  pagos: ServicioPagos
+  ordenes: ServicioConsultaOrdenes
+  validacion: ServicioValidacionBoletos
+  liberacion: ServicioLiberacionBloqueos
+  notificadores: List
+}
+class ServicioCatalogo {
+  + listar_eventos() -> List~Evento~
+  + asientos_del_evento(evento_id: str) -> List~Asiento~
+}
+class ServicioCompra {
+  + iniciar_compra(c: ComandoIniciarCompra) -> ResultadoCompra
+}
+class ServicioPagos {
+  + confirmar_pago(pasarela: str; notificacion: dict) -> Orden
+}
+class ServicioConsultaOrdenes {
+  + obtener_orden(orden_id: str) -> Orden
+  + boletos_de_orden(orden_id: str) -> List~Boleto~
+}
+class ServicioValidacionBoletos {
+  + validar(codigo_redencion: str) -> ResultadoValidacion
+}
+class ServicioLiberacionBloqueos {
+  + liberar_expirados() -> int
+}
+class ErrorDominio {
+}
+class EventoNoDisponible {
+}
+class EventoNoEncontrado {
+}
+class OrdenNoEncontrada {
+}
+class BoletoNoEncontrado {
+}
+class SeleccionInvalida {
+}
+class ClienteInvalido {
+}
+class PasarelaDesconocida {
+}
+class AsientoNoDisponible {
+}
+class LimiteBoletosExcedido {
+}
+class TransicionOrdenInvalida {
+}
+class ErrorPasarela {
+}
+class ErrorNotificacion {
+}
+class ErrorFacturacion {
+}
+class TipoEvento {
+  <<enumeration>>
+  CONCIERTO
+  TEATRO
+  FESTIVAL
+}
+class EstadoEvento {
+  <<enumeration>>
+  PROGRAMADO
+  AGOTADO
+  CANCELADO
+}
+class EstadoAsiento {
+  <<enumeration>>
+  DISPONIBLE
+  BLOQUEADO
+  VENDIDO
+}
+class EstadoOrden {
+  <<enumeration>>
+  PENDIENTE_PAGO
+  APROBADA
+  RECHAZADA
+  EXPIRADA
+}
+class EstadoPago {
+  <<enumeration>>
+  APROBADO
+  RECHAZADO
+  PENDIENTE
+}
+class Evento {
+  id: str
+  nombre: str
+  tipo: TipoEvento
+  recinto_id: str
+  fecha_hora: datetime
+  estado: EstadoEvento
+}
+class Asiento {
+  id: str
+  recinto_id: str
+  codigo_ubicacion: str
+  precio_base: Decimal
+  estado: EstadoAsiento
+}
+class Cliente {
+  id: str
+  nombre_completo: str
+  correo: str
+  telefono_movil: str
+  nacionalidad: str
+}
+class Orden {
+  id: str
+  evento_id: str
+  cliente: Cliente
+  asientos: List~Asiento~
+  tarifa_servicio: Decimal
+  descuento: Decimal
+  monto_total: Decimal
+  expira_en: datetime
+  estado: EstadoOrden
+  referencia_pago: Optional~str~
+  numero_factura: Optional~str~
+  + asientos_ids() -> List~str~
+  + esta_expirada(ahora: datetime) -> bool
+  + bloquea_asientos(ahora: datetime) -> bool
+  + vende_asientos() -> bool
+  + aprobar(referencia: Optional~str~) -> None
+  + rechazar() -> None
+  + expirar() -> None
+}
+class Boleto {
+  id: str
+  orden_id: str
+  evento_id: str
+  asiento_id: str
+  codigo_redencion: str
+  firma_hash: str
+  fecha_emision: datetime
+}
+class ResultadoTarifa {
+  subtotal: Decimal
+  tarifa_servicio: Decimal
+  descuento: Decimal
+  total: Decimal
+}
+class SolicitudPago {
+  referencia: str
+  url_pago: str
+}
+class ConfirmacionPago {
+  orden_id: str
+  estado: EstadoPago
+  referencia: str
+}
+class Factura {
+  numero: str
+  codigo_control: str
+}
+class Mensaje {
+  asunto: str
+  cuerpo: str
+}
+class ResultadoValidacion {
+  valido: bool
+  motivo: str
+  boleto: Optional~Boleto~
+}
+class CalculadoraTarifas {
+  + calcular(asientos: Iterable~Asiento~) -> ResultadoTarifa
+}
+class ComandoIniciarCompra {
+  evento_id: str
+  asientos_ids: List~str~
+  pasarela: str
+  nombre_completo: str
+  correo: str
+  telefono_movil: str
+  nacionalidad: str
+  cliente_id: Optional~str~
+}
+class ResultadoCompra {
+  orden: Orden
+  solicitud_pago: SolicitudPago
+}
+class ConsultarCatalogoUseCase {
+  <<interface>>
+  + listar_eventos() -> List~Evento~
+  + asientos_del_evento(evento_id: str) -> List~Asiento~
+}
+class IniciarCompraUseCase {
+  <<interface>>
+  + iniciar_compra(comando: ComandoIniciarCompra) -> ResultadoCompra
+}
+class ConfirmarPagoUseCase {
+  <<interface>>
+  + confirmar_pago(pasarela: str; notificacion: dict) -> Orden
+}
+class ConsultarOrdenUseCase {
+  <<interface>>
+  + obtener_orden(orden_id: str) -> Orden
+  + boletos_de_orden(orden_id: str) -> List~Boleto~
+}
+class ValidarBoletoUseCase {
+  <<interface>>
+  + validar(codigo_redencion: str) -> ResultadoValidacion
+}
+class LiberarBloqueosExpiradosUseCase {
+  <<interface>>
+  + liberar_expirados() -> int
+}
+class EventoRepositorio {
+  <<interface>>
+  + obtener(evento_id: str) -> Optional~Evento~
+  + listar() -> List~Evento~
+}
+class RecintoRepositorio {
+  <<interface>>
+  + obtener_aforo(recinto_id: str) -> int
+  + listar_asientos(recinto_id: str) -> List~Asiento~
+}
+class OrdenRepositorio {
+  <<interface>>
+  + guardar(orden: Orden) -> None
+  + obtener(orden_id: str) -> Optional~Orden~
+  + listar_por_evento(evento_id: str) -> List~Orden~
+  + listar_por_cliente_y_evento(cliente_id: str; evento_id: str) -> List~Orden~
+  + listar_pendientes_expiradas(ahora: datetime) -> List~Orden~
+}
+class BoletoRepositorio {
+  <<interface>>
+  + guardar_todos(boletos: List~Boleto~) -> None
+  + listar_por_orden(orden_id: str) -> List~Boleto~
+  + obtener_por_codigo(codigo_redencion: str) -> Optional~Boleto~
+}
+class PasarelaPagoPuerto {
+  <<interface>>
+  + nombre() -> str
+  + registrar_pago(orden: Orden) -> SolicitudPago
+  + interpretar_confirmacion(notificacion: dict) -> ConfirmacionPago
+}
+class GeneradorCredencialesPuerto {
+  <<interface>>
+  + generar_codigo_redencion() -> str
+  + firmar(evento_id: str; datos: str) -> str
+  + verificar(evento_id: str; datos: str; firma: str) -> bool
+  + representacion_grafica(boleto: Boleto) -> str
+}
+class NotificacionPuerto {
+  <<interface>>
+  + canal() -> str
+  + enviar(destinatario: Cliente; mensaje: Mensaje) -> None
+}
+class FacturacionElectronicaPuerto {
+  <<interface>>
+  + emitir_factura(orden: Orden) -> Factura
+}
+class RelojPuerto {
+  <<interface>>
+  + ahora() -> datetime
+}
+class GeneradorIdentificadoresPuerto {
+  <<interface>>
+  + nuevo_id() -> str
+}
+ProgramadorLiberacion ..> LiberarBloqueosExpiradosUseCase
+FacturacionElectronicaPuerto <|.. DianSimulado
+GeneradorCredencialesPuerto <|.. HmacCredenciales
+NotificacionPuerto <|.. _Simulado
+_Simulado <|.. SendgridCorreoSimulado
+_Simulado <|.. WhatsAppSimulado
+PasarelaPagoPuerto <|.. _PasarelaSimulada
+_PasarelaSimulada <|.. PayPalSimulado
+_PasarelaSimulada <|.. WompiSimulado
+_PasarelaSimulada <|.. PseSimulado
+EventoRepositorio <|.. EventoRepositorioMemoria
+RecintoRepositorio <|.. RecintoRepositorioMemoria
+OrdenRepositorio <|.. OrdenRepositorioMemoria
+BoletoRepositorio <|.. BoletoRepositorioMemoria
+OrdenRepositorio <|.. MongoOrdenRepositorio
+BoletoRepositorio <|.. MongoBoletoRepositorio
+EventoRepositorio <|.. MySqlEventoRepositorio
+RecintoRepositorio <|.. MySqlRecintoRepositorio
+RelojPuerto <|.. RelojSistema
+GeneradorIdentificadoresPuerto <|.. GeneradorUuid
+ConsultarCatalogoUseCase <|.. ServicioCatalogo
+ServicioCatalogo ..> EventoRepositorio
+ServicioCatalogo ..> RecintoRepositorio
+ServicioCatalogo ..> OrdenRepositorio
+ServicioCatalogo ..> RelojPuerto
+IniciarCompraUseCase <|.. ServicioCompra
+ServicioCompra ..> EventoRepositorio
+ServicioCompra ..> RecintoRepositorio
+ServicioCompra ..> OrdenRepositorio
+ServicioCompra ..> PasarelaPagoPuerto
+ServicioCompra ..> RelojPuerto
+ServicioCompra ..> GeneradorIdentificadoresPuerto
+ConfirmarPagoUseCase <|.. ServicioPagos
+ServicioPagos ..> OrdenRepositorio
+ServicioPagos ..> BoletoRepositorio
+ServicioPagos ..> PasarelaPagoPuerto
+ServicioPagos ..> GeneradorCredencialesPuerto
+ServicioPagos ..> FacturacionElectronicaPuerto
+ServicioPagos ..> NotificacionPuerto
+ServicioPagos ..> RelojPuerto
+ServicioPagos ..> GeneradorIdentificadoresPuerto
+ConsultarOrdenUseCase <|.. ServicioConsultaOrdenes
+ServicioConsultaOrdenes ..> OrdenRepositorio
+ServicioConsultaOrdenes ..> BoletoRepositorio
+ValidarBoletoUseCase <|.. ServicioValidacionBoletos
+ServicioValidacionBoletos ..> OrdenRepositorio
+ServicioValidacionBoletos ..> BoletoRepositorio
+ServicioValidacionBoletos ..> GeneradorCredencialesPuerto
+LiberarBloqueosExpiradosUseCase <|.. ServicioLiberacionBloqueos
+ServicioLiberacionBloqueos ..> OrdenRepositorio
+ServicioLiberacionBloqueos ..> RelojPuerto
+ErrorDominio <|.. EventoNoDisponible
+ErrorDominio <|.. EventoNoEncontrado
+ErrorDominio <|.. OrdenNoEncontrada
+ErrorDominio <|.. BoletoNoEncontrado
+ErrorDominio <|.. SeleccionInvalida
+ErrorDominio <|.. ClienteInvalido
+ErrorDominio <|.. PasarelaDesconocida
+ErrorDominio <|.. AsientoNoDisponible
+ErrorDominio <|.. LimiteBoletosExcedido
+ErrorDominio <|.. TransicionOrdenInvalida
+ErrorDominio <|.. ErrorPasarela
+ErrorDominio <|.. ErrorNotificacion
+ErrorDominio <|.. ErrorFacturacion

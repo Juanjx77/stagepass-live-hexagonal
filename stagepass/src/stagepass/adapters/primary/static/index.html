@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>StagePass Live</title>
+<style>
+ body{font-family:Arial,sans-serif;max-width:860px;margin:24px auto;padding:0 12px;color:#222}
+ h1{font-size:22px} h2{font-size:17px;margin-top:24px}
+ .seats{display:flex;flex-wrap:wrap;gap:6px}
+ .seat{border:1px solid #888;border-radius:4px;padding:6px 8px;font-size:12px;background:#fff;cursor:pointer}
+ .seat.BLOQUEADO{background:#f5d76e;cursor:not-allowed}.seat.VENDIDO{background:#bbb;cursor:not-allowed}
+ .seat.sel{background:#1168bd;color:#fff}
+ input,select,button{padding:6px;margin:3px 3px 3px 0;font-size:14px}
+ pre{background:#f4f4f4;padding:10px;overflow:auto;font-size:12px}
+ .err{color:#b00020}
+</style></head><body>
+<h1>StagePass Live — Venta de boletería</h1>
+<h2>1. Evento</h2><select id="evento"></select>
+<h2>2. Asientos <small>(amarillo = bloqueado, gris = vendido)</small></h2><div id="asientos" class="seats"></div>
+<h2>3. Datos del cliente y pasarela</h2>
+<input id="nombre" placeholder="Nombre completo"><input id="correo" placeholder="Correo">
+<input id="tel" placeholder="Teléfono móvil"><input id="nac" placeholder="Nacionalidad">
+<select id="pasarela"><option>wompi</option><option>paypal</option><option>pse</option></select>
+<button onclick="comprar()">Iniciar compra</button>
+<div id="msg" class="err"></div>
+<h2>4. Orden</h2><pre id="orden">—</pre>
+<button onclick="simular(true)">Simular pago aprobado</button>
+<button onclick="simular(false)">Simular pago rechazado</button>
+<h2>5. Boletas</h2><pre id="boletos">—</pre>
+<script>
+let sel=new Set(), ordenId=null, pasarela=null;
+const $=id=>document.getElementById(id);
+async function api(url,opts){const r=await fetch(url,opts);const d=await r.json();if(!r.ok)throw new Error(d.error||r.status);return d}
+async function cargarEventos(){const ev=await api('/api/eventos');
+ $('evento').innerHTML=ev.map(e=>`<option value="${e.id}">${e.nombre} (${e.estado})</option>`).join('');cargarAsientos()}
+async function cargarAsientos(){sel.clear();const a=await api(`/api/eventos/${$('evento').value}/asientos`);
+ $('asientos').innerHTML='';a.forEach(s=>{const b=document.createElement('div');b.className='seat '+s.estado;
+  b.textContent=`${s.codigo} · $${Number(s.precio_base).toLocaleString('es-CO')}`;
+  if(s.estado==='DISPONIBLE')b.onclick=()=>{sel.has(s.id)?sel.delete(s.id):sel.add(s.id);b.classList.toggle('sel')};
+  $('asientos').appendChild(b)})}
+async function comprar(){$('msg').textContent='';try{pasarela=$('pasarela').value;
+ const d=await api('/api/compras',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+  evento_id:$('evento').value,asientos:[...sel],pasarela,cliente:{nombre_completo:$('nombre').value,
+  correo:$('correo').value,telefono_movil:$('tel').value,nacionalidad:$('nac').value}})});
+ ordenId=d.orden.id;$('orden').textContent=JSON.stringify(d.orden,null,2);cargarAsientos()}
+ catch(e){$('msg').textContent=e.message}}
+function payload(ok){const id=ordenId;
+ if(pasarela==='paypal')return{event_type:ok?'PAYMENT.CAPTURE.COMPLETED':'PAYMENT.CAPTURE.DENIED',resource:{id:'PP-1',custom_id:id}};
+ if(pasarela==='pse')return{transactionState:ok?'APPROVED':'REJECTED',referenceCode:id,transactionId:'PSE-1'};
+ return{event:'transaction.updated',data:{transaction:{id:'W-1',status:ok?'APPROVED':'DECLINED',reference:id}}}}
+async function simular(ok){if(!ordenId)return;$('msg').textContent='';try{
+ await api('/webhooks/pagos/'+pasarela,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload(ok))});
+ const o=await api('/api/ordenes/'+ordenId);$('orden').textContent=JSON.stringify({...o,boletos:undefined},null,2);
+ $('boletos').textContent=o.boletos.length?JSON.stringify(o.boletos,null,2):'—';cargarAsientos()}catch(e){$('msg').textContent=e.message}}
+$('evento').onchange=cargarAsientos;cargarEventos();
+</script></body></html>
